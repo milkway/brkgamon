@@ -10,6 +10,8 @@ sspm("DT")
 sspm("RColorBrewer")
 sspm("shinythemes")
 
+file_info <- file.info("data/brkga.rds")
+
 simulation <- read_rds("data/brkga.rds") %>% mutate(
     Type = str_sub(Instancia, 6,8), 
     SubType = str_sub(Instancia, 10,10), 
@@ -36,6 +38,11 @@ library(shiny)
 # Define UI for application that draws a histogram
 ui <- navbarPage("CAST BRKGA", windowTitle = "CAST BRKGA", theme = shinytheme("cerulean"),
                  tabPanel("Monitor",
+                          fluidRow(
+                              span(style="text-align:left;font-weight:700;padding:10pt 0 10pt 10pt;color:red", "Last Update:"),
+                              span(style="text-align:left;font-weight:700;padding:10pt 10pt 10pt 0pt;color:black", file_info$mtime)
+                          ),
+                          
                           fluidRow(
                               h3(style="text-align:left;font-weight:700;padding:10pt" ,"Instance filters")
                           ),
@@ -151,18 +158,18 @@ server <- function(input, output, session) {
                    SubType == input$SubType,
                    n == as.numeric(input$N),
                    m == as.numeric(input$M)) %>%  
-            select(Type, SubType, n, m, File, LSEr, BKEr, N_gen, N_bst, Duration) %>% 
+            select(Type, SubType, n, m, File, Order, LSEr, BKEr, N_gen, N_bst, Duration) %>% 
             mutate(Duration = round(Duration,2))
 
             datatable( base, 
-                colnames = c("Type", "Subtype", "n", "m", "File", "LSEr", "BKEr", "Generations", "Best", "Duration"),
+                colnames = c("Type", "Subtype", "n", "m", "File", "Order", "LSEr", "BKEr", "Generations", "Best", "Duration"),
                 extensions = c('Buttons',  'KeyTable', 'Responsive'),
                 options = list(
                     keys = TRUE,
                     dom = 'Bfrtip',
                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                     columnDefs = list(list(className = 'dt-center', targets = c(1,2)),
-                                      list(orderable = FALSE, targets = 1:10)),
+                                      list(orderable = FALSE, targets = 1:11)),
                     pageLength = 100,
                     initComplete = JS(
                         "function(settings, json) {",

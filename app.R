@@ -40,7 +40,7 @@ ui <- navbarPage("CAST BRKGA", windowTitle = "CAST BRKGA", theme = shinytheme("c
                  tabPanel("Monitor",
                           fluidRow(
                               span(style="text-align:left;font-weight:700;padding:10pt 0 10pt 10pt;color:red", "Last Update:"),
-                              span(style="text-align:left;font-weight:700;padding:10pt 10pt 10pt 0pt;color:black", format(file_info$mtime, format = "%Y-%m-%d %H:%M:%S %Z"))
+                              span(style="text-align:left;font-weight:700;padding:10pt 10pt 10pt 0pt;color:black", strftime(file_info$mtime, format = "%Y-%m-%d %H:%M:%S %Z"))
                           ),
                           fluidRow(
                               h3(style="text-align:left;font-weight:700;padding:10pt" ,"Monitor")
@@ -92,7 +92,7 @@ server <- function(input, output, session) {
                                 select(SubType) %>%
                                 unlist(use.names = FALSE) %>%
                                 unique() %>%
-                                sort()
+                                sort(decreasing = TRUE)
                 ),
                 br()
             )
@@ -107,7 +107,7 @@ server <- function(input, output, session) {
                                 select(n) %>%
                                 unlist(use.names = FALSE) %>%
                                 unique() %>%
-                                sort()
+                                sort(decreasing = TRUE)
                 ),
                 br()
             )   
@@ -122,7 +122,7 @@ server <- function(input, output, session) {
                             select(m) %>%
                             unlist(use.names = FALSE) %>%
                             unique() %>%
-                            sort()
+                            sort(decreasing = TRUE)
                         ),
             br()
         )

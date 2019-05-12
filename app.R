@@ -131,19 +131,21 @@ server <- function(input, output, session) {
     })
 
     output$monitor <- renderPlot({
-        db %>% 
+        base <-         db %>% 
             filter(Type == "MDG") %>% 
             group_by(Type, SubType, File, BRKGAPDM) %>%
-            filter(!is.na(LSEr)) %>% 
-            summarise(n = n(), max = max(LSEr)) %>% ungroup() %>% 
+            #filter(!is.na(LSEr)) %>% 
+            summarise(n = sum(!is.na(LSEr)), max = max(LSEr)) %>% ungroup() %>% 
             mutate(Relation = factor(if_else(is.na(max), "target",
-                                      if_else(round(max,2) == 0.0, "target",
-                                              if_else(max >= -BRKGAPDM, "best", "lost"))), 
-                                     levels = c("target", "best", "lost"))) %>% 
+                                             if_else(round(max,2) == 0.0, "target",
+                                                     if_else(max >= -BRKGAPDM, "best", "lost"))), 
+                                     levels = c("target", "best", "lost"))) 
+            base %>% 
             ggplot() + 
-            geom_bar(aes(x = File, y = n, fill = Relation), stat = "identity") + 
-            facet_wrap(. ~ SubType, nrow = 3, strip.position = "left") + 
+            geom_bar(aes(x = as.factor(File), y = n, fill = Relation), stat = "identity") + 
+            facet_wrap(. ~ SubType, nrow = 3, strip.position = "left") + #xlim(1, 40) +
             scale_y_continuous(name ="Replications", breaks = seq(0,10,by = 2)) +
+            scale_x_discrete(name ="Instance", breaks = paste0(seq(1,max(db$File),by = 2))) +
             scale_fill_manual(values = rev(RColorBrewer::brewer.pal(3, "Set1")), drop = FALSE) +
             theme(legend.position="top") + labs(fill = " ")
     })
@@ -159,7 +161,7 @@ server <- function(input, output, session) {
                    n == as.numeric(input$N),
                    m == as.numeric(input$M)) %>%  
             select(Type, SubType, n, m, File, Order, LSEr, BKEr, N_gen, N_bst, Duration) %>% 
-            mutate(Duration = round(Duration,2))
+            mutate(Duration = round(Duration,2)) %>% arrange(Type, SubType, n, m, -File, -Order)
 
             datatable( base, 
                 colnames = c("Type", "Subtype", "n", "m", "File", "Order", "LSEr", "BKEr", "Generations", "Best", "Duration"),
@@ -170,7 +172,7 @@ server <- function(input, output, session) {
                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                     columnDefs = list(list(className = 'dt-center', targets = c(1,2)),
                                       list(orderable = FALSE, targets = 1:11)),
-                    pageLength = 100,
+                    pageLength = 40,
                     initComplete = JS(
                         "function(settings, json) {",
                         "$(this.api().table().header()).css({'background-color': '#006600', 'color': '#fff'});",

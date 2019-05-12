@@ -40,9 +40,13 @@ ui <- navbarPage("CAST BRKGA", windowTitle = "CAST BRKGA", theme = shinytheme("c
                  tabPanel("Monitor",
                           fluidRow(
                               span(style="text-align:left;font-weight:700;padding:10pt 0 10pt 10pt;color:red", "Last Update:"),
-                              span(style="text-align:left;font-weight:700;padding:10pt 10pt 10pt 0pt;color:black", file_info$mtime)
+                              span(style="text-align:left;font-weight:700;padding:10pt 10pt 10pt 0pt;color:black", format(file_info$mtime, format = "%Y-%m-%d %H:%M:%S %Z"))
                           ),
-                          
+                          fluidRow(
+                              h3(style="text-align:left;font-weight:700;padding:10pt" ,"Monitor")
+                          ),
+                          plotOutput("monitor"),
+                          hr(),
                           fluidRow(
                               h3(style="text-align:left;font-weight:700;padding:10pt" ,"Instance filters")
                           ),
@@ -57,11 +61,6 @@ ui <- navbarPage("CAST BRKGA", windowTitle = "CAST BRKGA", theme = shinytheme("c
                                      uiOutput("uiM")
                                      )
                           ),
-                          #hr(),
-                          fluidRow(
-                              h3(style="text-align:left;font-weight:700;padding:10pt" ,"Monitor")
-                          ),
-                          plotOutput("monitor"),
                           #hr(),
                           fluidRow(
                               h3(style="text-align:left;font-weight:700;padding:10pt" ,"Results")

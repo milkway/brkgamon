@@ -1,0 +1,180 @@
+#
+#
+#
+
+sspm <- function(...)
+    suppressPackageStartupMessages(library(...))
+
+sspm("tidyverse")
+sspm("DT")
+sspm("RColorBrewer")
+sspm("shinythemes")
+
+simulation <- read_rds("data/brkga.rds") %>% mutate(
+    Type = str_sub(Instancia, 6,8), 
+    SubType = str_sub(Instancia, 10,10), 
+    File = as.integer(str_remove(str_sub(Instancia, 12,13), "_")), 
+    n = as.integer(str_remove(str_extract(Instancia,pattern = "n\\d+"), pattern = "n")),
+    m = as.integer(str_remove(str_extract(Instancia,pattern = "m\\d+"), pattern = "m")),
+    Name = paste(SubType, File, sep = "-"),
+    Instancia = str_remove(str_remove(Instancia, pattern = "conv_"), pattern = ".txt"))
+
+
+brito <- read_rds("data/brito.rds")  %>% mutate(
+    Type = str_sub(Instancia, 1,3), 
+    SubType = str_sub(Instancia, 5,5), 
+    File = as.integer(str_remove(str_sub(Instancia, 7,8), "_")), 
+    n = as.integer(str_remove(str_extract(Instancia,pattern = "n\\d+"), pattern = "n")),
+    m = as.integer(str_remove(str_extract(Instancia,pattern = "m\\d+"), pattern = "m")),
+    Name = paste(SubType, File, sep = "-"))
+
+db <- simulation %>% select(-Target) %>% 
+    right_join(brito, by = c("Instancia", "Type", "SubType", "File", "Name", "n", "m"))
+
+library(shiny)
+
+# Define UI for application that draws a histogram
+ui <- navbarPage("CAST BRKGA", windowTitle = "CAST BRKGA", theme = shinytheme("cerulean"),
+                 tabPanel("Monitor",
+                          fluidRow(
+                              h3(style="text-align:left;font-weight:700;padding:10pt" ,"Instance filters")
+                          ),
+                          
+                          fluidRow(
+                              column(5, offset = 1,
+                                    uiOutput("uiType"),
+                                    uiOutput("uiSubType")
+                                     ),
+                              column(5,
+                                     uiOutput("uiN"),
+                                     uiOutput("uiM")
+                                     )
+                          ),
+                          #hr(),
+                          fluidRow(
+                              h3(style="text-align:left;font-weight:700;padding:10pt" ,"Monitor")
+                          ),
+                          plotOutput("monitor"),
+                          #hr(),
+                          fluidRow(
+                              h3(style="text-align:left;font-weight:700;padding:10pt" ,"Results")
+                          ),
+                          fluidRow(
+                              column(10, offset = 1,
+                                     DTOutput("simulation", width = '100%')
+                                     )
+                              )
+                          ),
+                 tabPanel("Figures"),
+                 tabPanel("Tables")
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output, session) {
+    
+    output$uiType <- renderUI(
+        tagList(
+            selectInput('Type', 'Type', sort(unique(simulation$Type)), selected = "MDG"),
+            br()
+        )
+    )
+
+    output$uiSubType <- renderUI(
+        if (!is.null(input$Type)){
+            tagList(
+                selectInput('SubType', 'Subtype', simulation %>% filter(Type == input$Type) %>%
+                                select(SubType) %>%
+                                unlist(use.names = FALSE) %>%
+                                unique() %>%
+                                sort()
+                ),
+                br()
+            )
+        }
+    )
+
+    output$uiN <- renderUI({
+        if (!is.null(input$SubType)){
+            tagList(
+                selectInput('N', 'Instance size',
+                            simulation %>% filter(SubType == input$SubType) %>%
+                                select(n) %>%
+                                unlist(use.names = FALSE) %>%
+                                unique() %>%
+                                sort()
+                ),
+                br()
+            )   
+        }
+    })
+
+    output$uiM <- renderUI({
+        if (!is.null(input$N)){        
+        tagList(
+            selectInput('M', 'Tour size',
+                        simulation %>% filter(n == input$N) %>%
+                            select(m) %>%
+                            unlist(use.names = FALSE) %>%
+                            unique() %>%
+                            sort()
+                        ),
+            br()
+        )
+        }
+    })
+
+    output$monitor <- renderPlot({
+        db %>% 
+            filter(Type == "MDG") %>% 
+            group_by(Type, SubType, File, BRKGAPDM) %>%
+            filter(!is.na(LSEr)) %>% 
+            summarise(n = n(), max = max(LSEr)) %>% ungroup() %>% 
+            mutate(Relation = factor(if_else(is.na(max), "target",
+                                      if_else(round(max,2) == 0.0, "target",
+                                              if_else(max >= -BRKGAPDM, "best", "lost"))), 
+                                     levels = c("target", "best", "lost"))) %>% 
+            ggplot() + 
+            geom_bar(aes(x = File, y = n, fill = Relation), stat = "identity") + 
+            facet_wrap(. ~ SubType, nrow = 3, strip.position = "left") + 
+            scale_y_continuous(name ="Replications", breaks = seq(0,10,by = 2)) +
+            scale_fill_manual(values = rev(RColorBrewer::brewer.pal(3, "Set1")), drop = FALSE) +
+            theme(legend.position="top") + labs(fill = " ")
+    })
+    
+    output$simulation <- renderDT({
+        if (!(is.null(input$Type) || 
+              is.null(input$SubType) ||
+              is.null(input$N) ||
+              is.null(input$M))) {
+        base <- simulation %>% 
+            filter(Type == input$Type,
+                   SubType == input$SubType,
+                   n == as.numeric(input$N),
+                   m == as.numeric(input$M)) %>%  
+            select(Type, SubType, n, m, File, LSEr, BKEr, N_gen, N_bst, Duration) %>% 
+            mutate(Duration = round(Duration,2))
+
+            datatable( base, 
+                colnames = c("Type", "Subtype", "n", "m", "File", "LSEr", "BKEr", "Generations", "Best", "Duration"),
+                extensions = c('Buttons',  'KeyTable', 'Responsive'),
+                options = list(
+                    keys = TRUE,
+                    dom = 'Bfrtip',
+                    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                    columnDefs = list(list(className = 'dt-center', targets = c(1,2)),
+                                      list(orderable = FALSE, targets = 1:10)),
+                    pageLength = 100,
+                    initComplete = JS(
+                        "function(settings, json) {",
+                        "$(this.api().table().header()).css({'background-color': '#006600', 'color': '#fff'});",
+                        "}")
+                )
+            ) %>%
+                formatRound(columns = c("LSEr", "BKEr", "Duration"), digits =  2)
+        }
+        
+        }) 
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)

@@ -130,23 +130,26 @@ server <- function(input, output, session) {
     })
 
     output$monitor <- renderPlot({
-        base <-         db %>% 
+        base <- db %>% 
             filter(Type == "MDG") %>% 
-            group_by(Type, SubType, File, BRKGAPDM) %>%
-            #filter(!is.na(LSEr)) %>% 
-            summarise(n = sum(!is.na(LSEr)), max = max(LSEr)) %>% ungroup() %>% 
-            mutate(Relation = factor(if_else(is.na(max), "target",
-                                             if_else(round(max,2) == 0.0, "target",
-                                                     if_else(max >= -BRKGAPDM, "best", "lost"))), 
-                                     levels = c("target", "best", "lost"))) 
-            base %>% 
+            mutate(nA = is.na(LSEr),
+                   target = abs(round(LSEr, 2) - 0.0) <= .Machine$double.eps,
+                   draw = (!target)&(abs(LSEr + BRKGAPDM) <= .Machine$double.eps),
+                   best = (!target)&(LSEr > -BRKGAPDM),
+                   lost = (!target)&(LSEr < -BRKGAPDM)) %>% 
+            gather(Relation, Value, -Order:-GRASPM) %>% 
+            filter(Value) %>% 
+            mutate(Relation = factor(Relation, levels = c("target", "best",   "draw", "lost")))
+        base %>% 
             ggplot() + 
-            geom_bar(aes(x = as.factor(File), y = n, fill = Relation), stat = "identity") + 
-            facet_wrap(. ~ SubType, nrow = 3, strip.position = "left") + #xlim(1, 40) +
+            geom_bar(aes(x = as.factor(File), fill = Relation), position = "stack", na.rm = TRUE) + 
+            facet_wrap(. ~ SubType, nrow = 3, strip.position = "right") + #xlim(1, 40) +
             scale_y_continuous(name ="Replications", breaks = seq(0,10,by = 2)) +
             scale_x_discrete(name ="Instance", breaks = paste0(seq(1,max(db$File),by = 2))) +
-            scale_fill_manual(values = rev(RColorBrewer::brewer.pal(3, "Set1")), drop = FALSE) +
+            scale_fill_manual(breaks = c("target", "best",   "draw", "lost"), 
+                              values = rev(RColorBrewer::brewer.pal(4, "RdYlGn")), drop = FALSE) +
             theme(legend.position="top") + labs(fill = " ")
+        
     })
     
     output$simulation <- renderDT({

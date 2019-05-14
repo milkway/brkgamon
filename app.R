@@ -30,8 +30,12 @@ brito <- read_rds("data/brito.rds")  %>% mutate(
     m = as.integer(str_remove(str_extract(Instancia,pattern = "m\\d+"), pattern = "m")),
     Name = paste(SubType, File, sep = "-"))
 
-db <- simulation %>% select(-Target) %>% 
-    right_join(brito, by = c("Instancia", "Type", "SubType", "File", "Name", "n", "m"))
+db <- simulation %>% select(-Target, -LSEr, -BKEr) %>% 
+    right_join(brito, by = c("Instancia", "Type", "SubType", "File", "Name", "n", "m")) %>% 
+    mutate(LSEr = 100*(round(LS,2) - Target)/Target,
+           BKEr = 100*(round(BRKGA,2) - Target)/Target)
+
+new_simulation <- db %>% filter(!is.na(Order))
 
 library(shiny)
 
@@ -134,10 +138,10 @@ server <- function(input, output, session) {
             filter(Type == "MDG") %>% 
             mutate(nA = is.na(LSEr),
                    target = abs(round(LSEr, 2) - 0.0) <= .Machine$double.eps,
-                   draw = (!target)&(abs(LSEr + BRKGAPDM) <= .Machine$double.eps),
-                   best = (!target)&(LSEr > -BRKGAPDM),
-                   lost = (!target)&(LSEr < -BRKGAPDM)) %>% 
-            gather(Relation, Value, -Order:-GRASPM) %>% 
+                   draw = (!target)&(abs(round(LSEr,2) + BRKGAPDM) <= .Machine$double.eps),
+                   best = (!target)&(round(LSEr,2) > -BRKGAPDM),
+                   lost = (!target)&(round(LSEr,2) < -BRKGAPDM)) %>% 
+            gather(Relation, Value, -Order:-BKEr) %>% 
             filter(Value) %>% 
             mutate(Relation = factor(Relation, levels = c("target", "best",   "draw", "lost")))
         base %>% 
@@ -157,23 +161,23 @@ server <- function(input, output, session) {
               is.null(input$SubType) ||
               is.null(input$N) ||
               is.null(input$M))) {
-        base <- simulation %>% 
+        base <- new_simulation %>% 
             filter(Type == input$Type,
                    SubType == input$SubType,
                    n == as.numeric(input$N),
                    m == as.numeric(input$M)) %>%  
-            select(Type, SubType, n, m, File, Order, LSEr, BKEr, N_gen, N_bst, Duration) %>% 
+        select(Type, SubType, n, m, File, Order, LSEr, BRKGAPDM, BKEr, N_gen, N_bst, Duration) %>% 
             mutate(Duration = round(Duration,2)) %>% arrange(Type, SubType, n, m, -File, -Order)
 
             datatable( base, 
-                colnames = c("Type", "Subtype", "n", "m", "File", "Order", "LSEr", "BKEr", "Generations", "Best", "Duration"),
+                colnames = c("Type", "Subtype", "n", "m", "File", "Order", "LSEr", "PDMEr", "BKEr", "Generations", "Best", "Duration"),
                 extensions = c('Buttons',  'KeyTable', 'Responsive'),
                 options = list(
                     keys = TRUE,
                     dom = 'Bfrtip',
                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
                     columnDefs = list(list(className = 'dt-center', targets = c(1,2)),
-                                      list(orderable = FALSE, targets = 1:11)),
+                                      list(orderable = FALSE, targets = 1:12)),
                     pageLength = 40,
                     initComplete = JS(
                         "function(settings, json) {",
@@ -181,7 +185,7 @@ server <- function(input, output, session) {
                         "}")
                 )
             ) %>%
-                formatRound(columns = c("LSEr", "BKEr", "Duration"), digits =  2)
+                formatRound(columns = c("LSEr", "BRKGAPDM", "BKEr", "Duration"), digits =  2)
         }
         
         }) 

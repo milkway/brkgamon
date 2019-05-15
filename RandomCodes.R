@@ -178,4 +178,13 @@ forceNetwork(Links = Links, Nodes = Nodes, Nodesize = "size",
 
 #/////////////////////////
 
+library(tidyverse)
+
+simulation %>% filter(Type == "MDG", SubType == "a", n == 500) %>% 
+  group_by(File, LSEr) %>% count() %>% arrange(File, LSEr)
+
+
+simulation %>% filter(Type == "MDG", SubType == "a", n == 500) %>% 
+  group_by(File, LSEr) %>% count() %>% 
+  arrange(File, -LSEr) %>% ungroup %>% group_by(File) %>% slice(1)
 

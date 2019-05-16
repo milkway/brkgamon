@@ -167,7 +167,9 @@ server <- function(input, output, session) {
                    n == as.numeric(input$N),
                    m == as.numeric(input$M)) %>%  
         select(Type, SubType, n, m, File, Order, LSEr, BRKGAPDM, BKEr, N_gen, N_bst, Duration) %>% 
-            mutate(Duration = round(Duration,2)) %>% arrange(Type, SubType, n, m, -File, -Order)
+            mutate(Duration = round(Duration,2)) %>% arrange(Type, SubType, n, m, -File, -Order) %>% 
+            mutate(LSEr = round(LSEr, 3),
+                   BKEr = round(BKEr, 3))
 
             datatable( base, 
                 colnames = c("Type", "Subtype", "n", "m", "File", "Order", "LSEr", "PDMEr", "BKEr", "Generations", "Best", "Duration"),

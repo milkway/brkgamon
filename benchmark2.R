@@ -1,5 +1,6 @@
 library(tidyverse)
 
+read_rds("../brkga/inst/extdata/ca")
 
 benchmark <- read_rds("data/brkga.rds") %>% mutate(
   Type = str_sub(Instancia, 6,8), 

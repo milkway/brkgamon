@@ -1,10 +1,10 @@
-base <- db %>% 
-  filter(Type == "MDG") %>% 
-  mutate(Relation = factor(if_else(is.na(LSEr), as.character(NA),
-                                   if_else(all.equal(round(LSEr, 2), 0.0), "target",
-                                           if_else(all.equal(abs(LSEr), abs(BRKGAPDM)),
-                                                   if_else(LSEr > -BRKGAPDM, "best", "lost")))), 
-                           levels = c("target", "best", "lost")))
+# base <- db %>% 
+#   filter(Type == "MDG") %>% 
+#   mutate(Relation = factor(if_else(is.na(LSEr), NA_character_,
+#                                    if_else(isTRUE(all.equal(round(LSEr, 2), 0.0)), "target",
+#                                            if_else(isTRUE(all.equal(abs(LSEr), abs(BRKGAPDM))),
+#                                                    if_else(LSEr > -BRKGAPDM, "best", "lost")))), 
+#                            levels = c("target", "best", "lost")))
 
 
 base <- db %>% 
@@ -28,12 +28,23 @@ base %>%
   theme(legend.position="top") + labs(fill = " ")
 
 
+
+base %>% 
+  filter(n == 500, m == 50) %>% 
+  select(BRKGA, LS, BRKGAPDM, BRKGAM, Target, Name, LSEr, BKEr, GRASPM, Relation) %>% 
+  
+  count(Relation)
+
+
+
 library(tidyverse)
 library(networkD3)
 library(scales)
 
 
-simulation <- read_rds("~/data/brkga.rds")
+simulation <- read_rds("data/brkga.rds")
+
+read_rds("data/brkga_results/resultado_brkga.rds")
 
 # control colours with a JS ordinal scale
 # edited 20 May 2017 with updated code from Renal Chesak's answer:
@@ -188,3 +199,13 @@ simulation %>% filter(Type == "MDG", SubType == "a", n == 500) %>%
   group_by(File, LSEr) %>% count() %>% 
   arrange(File, -LSEr) %>% ungroup %>% group_by(File) %>% slice(1)
 
+
+base %>% filter(Type == "MDG", SubType == "a", n == 500) %>% 
+  group_by(File, LSEr) %>% count() %>% 
+  arrange(File, -LSEr) %>% ungroup %>% group_by(File) %>% slice(1)
+
+
+base %>% filter(Type == "MDG", SubType == "a", n == 500) %>% 
+  group_by(Name) %>% 
+  slice_min(LSEr) %>% 
+  arrange(File)

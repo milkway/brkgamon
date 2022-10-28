@@ -17,3 +17,6 @@ results <- read_rds("data/brkga_results/resultado_brkga.rds") %>% mutate(
 results %>% filter(n == 2000) %>% ggplot() + 
   geom_boxplot(aes(y = LSEr, x = reorder(Name, -File))) + coord_flip() +
   geom_jitter(aes(y = LSEr, x = reorder(Name, -File)),  color = "darkgreen", alpha = .5) 
+
+
+read_rds("data/brkga_results/resultado_brkga.rds")

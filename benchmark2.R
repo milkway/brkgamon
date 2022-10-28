@@ -1,8 +1,8 @@
 library(tidyverse)
 
-read_rds("../brkga/inst/extdata/ca")
+read_rds("../brkga/inst/extdata/MDG.10.a.n500m50.rds")
 
-benchmark <- read_rds("data/brkga.rds") %>% mutate(
+benchmark <- read_rds("data/brkga_results/resultado_brkga.rds") %>% mutate(
   Type = str_sub(Instancia, 6,8), 
   SubType = str_sub(Instancia, 10,10), 
   File = as.integer(str_remove(str_sub(Instancia, 12,13), "_")), 
@@ -20,14 +20,18 @@ brito <- read_rds("data/brito.rds")  %>% mutate(
   m = as.integer(str_remove(str_extract(Instancia,pattern = "m\\d+"), pattern = "m")),
   Name = paste(SubType, File, sep = "-"))
 
-db <- benchmark  %>% 
+db <- benchmark  %>% select(-Target) %>% 
   left_join(brito, by = c("Instancia", "Type", "SubType", "File", "Name", "n", "m")) %>% 
-  mutate(LSEr = 100*(round(LS,2) - Target)/Target,
-         BKEr = 100*(round(BRKGA,2) - Target)/Target)
+  mutate(LSEr = 100*(round(-LS,2) - Target)/Target,
+         BKEr = 100*(round(-BRKGA,2) - Target)/Target)
 
 
 
-db %>% ggplot() + 
+db %>% 
+  filter(n == 500, m == 50) %>% 
+  mutate(Method = paste(SubType, File, '-')) %>% 
+  select(Method, LSEr) %>% 
+  ggplot() + 
   geom_boxplot(aes(x = reorder(Method, LSEr, median), y = LSEr, fill = Method)) + 
   coord_flip() + labs(x = "Method", y = "Error in %")
 

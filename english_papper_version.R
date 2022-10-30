@@ -83,17 +83,20 @@ base %>%
   geom_boxplot(aes(x = reorder(Name, -File), 
                    y = BRKGALS, 
                    fill = ResultLS)) +
-  geom_point(aes(x = reorder(Name, -File), y = BRKGAM, color = 'BRKGAM')) +
-  geom_point(aes(x = reorder(Name, -File), y = BRKGAPDM, color = 'BRKGAPDM')) +
+  geom_point(aes(x = reorder(Name, -File), y = BRKGAM, color = 'BRKGAM', shape = 'BRKGAM'), size = 2) +
+  geom_point(aes(x = reorder(Name, -File), y = BRKGAPDM, color = 'BRKGAPDM', shape = 'BRKGAPDM'), size = 2) +
   coord_flip() + theme_light() +
   labs(x = "Deviation (%)",
        y = "Instance MDG-a (n = 500)",
        fill = 'BRKGALS',
-       color = 'Methods') +
+       color = 'Methods',
+       shape = 'Methods') +
+  #guides(shape = 'none') +
   theme(legend.direction = 'horizontal',
         legend.position = 'bottom') +
   scale_fill_brewer(palette = "BrBG") +
-  scale_color_brewer(palette = "Dark2")
+  scale_color_brewer(palette = "Dark2") +
+  scale_shape_manual(values = c('BRKGAM' = 3, 'BRKGAPDM' = 4))
 
 
 
@@ -196,15 +199,16 @@ base4 %>%
                    y = BRKGALS, 
                    fill = ResultLS)) +
   geom_point(aes(x = reorder(Name, -File), y = BRKGAM, color = 'BRKGAM', shape = 'BRKGAM'), size = 2) +
-  geom_point(aes(x = reorder(Name, -File), y = BRKGAPDM, color = 'BRKGAPDM', shape = 'BRKGAM'), size = 2) +
+  geom_point(aes(x = reorder(Name, -File), y = BRKGAPDM, color = 'BRKGAPDM', shape = 'BRKGAPDM'), size = 2) +
   coord_flip() + theme_light() +
   labs(x = "Deviation (%)",
        y = "Instance MDG-a (n = 2000)",
        fill = 'BRKGALS',
        color = 'Methods',
        shape = 'Methods') +
-  guides(shape = 'none') +
+  #guides(shape = 'none') +
   theme(legend.direction = 'horizontal',
         legend.position = 'bottom') +
   scale_fill_brewer(palette = "BrBG") +
-  scale_color_brewer(palette = "Dark2")
+  scale_color_brewer(palette = "Dark2") +
+  scale_shape_manual(values = c('BRKGAM' = 3, 'BRKGAPDM' = 4))
